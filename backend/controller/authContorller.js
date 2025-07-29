@@ -7,7 +7,10 @@ import jwt from "jsonwebtoken"
 const signupSchema = z.object({
     name: z.string().min(1,"Full name is required" ),
     email: z.email("Invalid email format"),
-    password: z.string().min(6, "Password must be at least 6 characters" )
+    password: z.string().min(6, "Password must be at least 6 characters" ),
+    role:z.string().optional(),
+    adminCode:z.string().optional()
+    
 })
 
 const loginSchema = z.object({
@@ -27,7 +30,7 @@ export async function signup(req, res) {
         }
 
         //destructing the result body
-        const { name, email, password } = result.data;
+        const { name, email, password, role ,adminCode } = result.data;
 
         ///checking the already existed User
         const existingUser = await User.findOne({ email })
@@ -36,14 +39,24 @@ export async function signup(req, res) {
             return res.status(401).json({ msg: "User is  already existed" })
         }
 
+        let assignedRole = "student";
+
+        if(role === "admin"){
+            if(adminCode !== process.env.ADMIN_CODE){
+                return res.status(400).json({msg:"unauthorized access"})
+            }
+          assignedRole = "admin";
+        }
+
 
         const newUser = await User.create({
-            name: name,
-            email: email,
-            password: password,
+            name,
+            email,
+            password,
+            role:assignedRole,
         })
 
-        const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET_KEY, {
+        const token = jwt.sign({ userId: newUser._id , role:newUser.role }, process.env.JWT_SECRET_KEY, {
             expiresIn: "7d",
         })
 
