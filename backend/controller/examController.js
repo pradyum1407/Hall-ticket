@@ -1,8 +1,9 @@
-import { success, z } from "zod"
+import {z } from "zod"
 import Exam from "../modal/Exam.js"
 import User from "../modal/User.js"
 import JoinExam from "../modal/JoinExam.js"
 import Question from "../modal/Question.js"
+
 
 const examSchema = z.object({
     subject: z.string().min(1),
@@ -82,7 +83,7 @@ export async function startExam(req, res) {
     try {
 
         // check  the joining  of the exam
-         
+
         const joined = await JoinExam.findOne({ userId, subject });
 
         if (!joined) {
@@ -109,10 +110,16 @@ export async function startExam(req, res) {
         const shuffled = [...data.questions].sort(() => 0.5 - Math.random());
         const selectedQuestions = shuffled.slice(0, numberOfQuestion)
 
+        //filter the qustions array
+        const filterQuestion = selectedQuestions.map(q=>({
+            _id:q._id,
+            question:q.question
+        }))
+
         res.status(200).json({
             success: true,
             subject,
-            selectedQuestions
+            question:filterQuestion
         })
 
     } catch (error) {
