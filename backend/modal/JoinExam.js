@@ -13,7 +13,14 @@ const joinExamSchema = mongoose.Schema({
     joinedAt:{
         type:Date,
         default:Date.now
-    }
+    },
+    questionSet:[
+        {
+            questionId:mongoose.Schema.Types.ObjectId,
+            question:String,
+            answer:String // correct answer  (later remove in the frontend)
+        }
+    ]
 });
 
 const JoinExam = mongoose.model("joinExam", joinExamSchema);

@@ -1,4 +1,4 @@
-import {z } from "zod"
+import { z } from "zod"
 import Exam from "../modal/Exam.js"
 import User from "../modal/User.js"
 import JoinExam from "../modal/JoinExam.js"
@@ -79,7 +79,7 @@ export async function startExam(req, res) {
     const userId = req.user._id;
     const subject = req.params.subject;
 
-   
+
     try {
 
         // check  the joining  of the exam
@@ -111,15 +111,25 @@ export async function startExam(req, res) {
         const selectedQuestions = shuffled.slice(0, numberOfQuestion)
 
         //filter the qustions array
-        const filterQuestion = selectedQuestions.map(q=>({
-            _id:q._id,
-            question:q.question
+        const questionSet = selectedQuestions.map(q => ({
+            questionId: q._id,
+            question: q.question,
+            answer: q.answer
+        }))
+
+        await JoinExam.updateOne({ userId, subject }, { $set: { questionSet } });
+
+
+        //format shown on the frontend
+        const publicQuestions = questionSet.map(q => ({
+            questionId: q._id,
+            question: q.question
         }))
 
         res.status(200).json({
             success: true,
             subject,
-            question:filterQuestion
+            question: publicQuestions
         })
 
     } catch (error) {
@@ -127,6 +137,51 @@ export async function startExam(req, res) {
             res.status(500).json({ msg: "internal error in Start exam" })
     }
 
+}
+
+export async function submitAnswer(req, res) {
+
+    const userId = req.user._id;
+    const subject = req.params.subject;
+    const submitAnswer = req.body.answers;
+
+    try {
+
+        const joined = await joinExam.findOne({ userId, subject })
+        if (!joined || !joined.questionSet || !joined.questionSet.length === 0) {
+            return res.status(403).json({ msg: "you have not started the exam" })
+        }
+
+        const storedQuestions = joined.questionSet;
+        let score = 0;
+
+        for (const submitted of submitAnswer) {
+            const original = storedQuestions.find(q => q.questionId.toString() === submitted.questionId);
+            if (
+                original &&
+                submitted.answer.trim().toLowerCase() === original.answer.trim().toLowerCase()
+            ) {
+                score++;
+            }
+        }
+
+        await Submission.create({
+            userId,
+            subject,
+            answers: submitAnswer,
+            score
+        });
+
+        res.status(200).json({
+            success: true,
+            msg: 'Exam submitted successfully',
+            score
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ msg: 'Internal error in submitAnswers' });
+    }
 
 
 }
