@@ -1,13 +1,14 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
 import { Login} from "../../lib/api"
-import logo from "../../assest/prepbase.png"
+import logo from "../../assest/prepbase.png"  
 import { Eye, EyeOff } from "lucide-react";
-
+import useAuthStore from "../../store/authstore"
 
 const login = () => {
 
   const navigate = useNavigate()
+const loginStore=useAuthStore((state)=> state.login)
 
   const [formData, setFormData]=useState({
     email:"",
@@ -29,9 +30,12 @@ const handleSubmit = async(e)=>{
 
   try {
     const response= await Login(formData);
+    const {email,token}= response.data;
+
     navigate("/")
     console.log("login succesfull",response);
-    
+       
+  loginStore(email,token)
   } catch (error) {
     setError(error.response?.data?.msg || "Login failed");
   }
